@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ISS Live Tracker</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet.js -->
+  <link  rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Leaflet.terminator (day/night layer) -->
+  <script src="https://unpkg.com/@joergdietrich/leaflet.terminator@1.0.0/L.Terminator.js"></script>
+
+  <!-- Socket.IO client (served by the server) -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- App stylesheet -->
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+  <!-- ────────────────── Loading Overlay ────────────────── -->
+  <div id="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-satellite">🛰️</div>
+      <div class="loading-title">ISS LIVE TRACKER</div>
+      <div class="loading-bar-wrapper">
+        <div class="loading-bar"></div>
+      </div>
+      <div class="loading-status">Establishing connection…</div>
+    </div>
+  </div>
+
+  <!-- ────────────────── Top Navigation Bar ────────────────── -->
+  <header id="top-bar">
+    <div class="top-bar-left">
+      <span class="app-icon">🛰️</span>
+      <span class="app-title">ISS LIVE TRACKER</span>
+    </div>
+
+    <div class="top-bar-center">
+      <span id="utc-time" class="utc-clock">UTC --:--:--</span>
+    </div>
+
+    <div class="top-bar-right">
+      <div id="connection-status" class="conn-status disconnected">
+        <span class="conn-dot"></span>
+        <span class="conn-label">OFFLINE</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ────────────────── Left Sidebar ────────────────── -->
+  <aside id="sidebar">
+    <!-- Toggle for mobile -->
+    <button id="sidebar-toggle" aria-label="Toggle telemetry panel">☰ TELEMETRY</button>
+
+    <div id="sidebar-content">
+      <!-- Section: Live Telemetry -->
+      <section class="panel-section">
+        <h2 class="section-title">
+          <span class="section-icon">📡</span> LIVE TELEMETRY
+        </h2>
+
+        <div class="telemetry-grid">
+          <div class="telem-label">Latitude</div>
+          <div class="telem-value" id="telem-lat">--°</div>
+
+          <div class="telem-label">Longitude</div>
+          <div class="telem-value" id="telem-lon">--°</div>
+
+          <div class="telem-label">
+            Altitude
+            <button class="unit-toggle" id="alt-toggle" data-unit="km">km/mi</button>
+          </div>
+          <div class="telem-value" id="telem-alt">-- km</div>
+
+          <div class="telem-label">
+            Velocity
+            <button class="unit-toggle" id="vel-toggle" data-unit="kmh">km∕h · mph</button>
+          </div>
+          <div class="telem-value" id="telem-vel">-- km/h</div>
+
+          <div class="telem-label">Visibility</div>
+          <div class="telem-value" id="telem-vis">--</div>
+
+          <div class="telem-label">Over</div>
+          <div class="telem-value small" id="telem-location">--</div>
+        </div>
+      </section>
+
+      <!-- Section: Distance Traveled -->
+      <section class="panel-section">
+        <h2 class="section-title">
+          <span class="section-icon">📏</span> SESSION STATS
+        </h2>
+        <div class="telemetry-grid">
+          <div class="telem-label">Distance</div>
+          <div class="telem-value" id="telem-distance">0 km</div>
+
+          <div class="telem-label">Updates</div>
+          <div class="telem-value" id="telem-updates">0</div>
+        </div>
+      </section>
+
+      <!-- Section: Crew Aboard -->
+      <section class="panel-section">
+        <h2 class="section-title">
+          <span class="section-icon">👨‍🚀</span> CREW ABOARD
+          <span class="crew-badge" id="crew-count">--</span>
+        </h2>
+        <ul id="crew-list" class="crew-list">
+          <li class="crew-item placeholder">Loading crew data…</li>
+        </ul>
+      </section>
+
+      <!-- Section: Next Pass (My Location) -->
+      <section class="panel-section">
+        <h2 class="section-title">
+          <span class="section-icon">🎯</span> NEXT PASS
+        </h2>
+        <button id="mylocation-btn" class="action-btn full-width">
+          📍 Use My Location
+        </button>
+        <div id="pass-info" class="pass-info">
+          <span class="pass-placeholder">Click button to calculate</span>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ────────────────── Map Container ────────────────── -->
+  <div id="map"></div>
+
+  <!-- ────────────────── Bottom-Right Controls ────────────────── -->
+  <div id="map-controls">
+    <button id="center-btn"  class="action-btn">⊕ Center ISS</button>
+    <button id="follow-btn"  class="action-btn" data-following="false">▶ Follow ISS</button>
+    <button id="terminator-btn" class="action-btn" data-active="false">🌒 Day/Night</button>
+  </div>
+
+  <!-- App JavaScript -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
