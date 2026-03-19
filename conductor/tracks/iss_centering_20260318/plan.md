@@ -3,15 +3,16 @@
 ## Phase 1: Frontend Logic (Centering and Zoom)
 
 ### Task 1.1: Implement Initial Centering
-- [ ] **Task: Write Tests for Initial Centering**
-    - [ ] Create `public/js/tests/centering.test.js` (or similar, depending on existing test setup).
-    - [ ] Mock Socket.IO `iss:position` event.
-    - [ ] Verify that `map.setView()` or `map.panTo()` is called with the ISS coordinates upon the first update.
-- [ ] **Task: Implement Initial Centering Logic in `public/js/app.js`**
-    - [ ] Add a state variable `isInitialCenteringDone = false`.
-    - [ ] Update the `iss:position` event listener to check `isInitialCenteringDone` and center the map if `false`.
-    - [ ] Set `isInitialCenteringDone = true` after the first successful center.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Initial Centering' (Protocol in workflow.md)**
+    - [x] Task: Write Tests for Initial Centering
+    - [x] Create `public/js/tests/centering.test.js` (or similar, depending on existing test setup).
+    - [x] Mock Socket.IO `iss:position` event.
+    - [x] Verify that `map.setView()` or `map.panTo()` is called with the ISS coordinates upon the first update.
+- [x] **Task: Implement Initial Centering Logic in `public/js/app.js`**
+    - [x] Add a state variable `isInitialCenteringDone = false`.
+    - [x] Update the `iss:position` event listener to check `isInitialCenteringDone` and center the map if `false`.
+    - [x] Set `isInitialCenteringDone = true` after the first successful center.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Initial Centering' (Protocol in workflow.md) [50a51b8]
+
 
 ### Task 1.2: Dynamic Zooming Based on Footprint
 - [ ] **Task: Write Tests for Dynamic Zooming**
