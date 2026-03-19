@@ -324,7 +324,18 @@ socket.on('iss:position', (data) => {
   // Initial Auto-Center logic
   if (!state.isInitialCenteringDone) {
     const latlng = L.latLng(data.latitude, data.longitude);
+    
+    // Position the marker/circle first so bounds are correct
+    issMarker.setLatLng(latlng);
+    footprintCircle.setLatLng(latlng);
+    if (data.footprint_radius_km) {
+      footprintCircle.setRadius(data.footprint_radius_km * 1000);
+    }
+
+    // Center and fit zoom to the visibility footprint
     map.panTo(latlng, { animate: true, duration: 1.5 });
+    map.fitBounds(footprintCircle.getBounds(), { padding: [20, 20] });
+    
     state.isInitialCenteringDone = true;
   }
 

@@ -129,6 +129,9 @@ describe('ISS Initial Centering', () => {
       expect.objectContaining({ lat: 45.0, lon: -90.0 }),
       expect.any(Object)
     );
+
+    // Verify map.fitBounds was called for dynamic zooming
+    expect(mapInstance.fitBounds).toHaveBeenCalled();
   });
 
   test('should not center map on subsequent updates if not following', () => {
