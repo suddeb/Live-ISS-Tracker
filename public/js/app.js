@@ -294,38 +294,86 @@ function updateCrew(data) {
     return;
   }
 
+  // Define agency branding (icons/emojis)
+  const agencyMeta = {
+    'NASA':      { icon: '🇺🇸', tag: 'tag-nasa' },
+    'Roscosmos': { icon: '🇷🇺', tag: 'tag-rsa' },
+    'RSA':       { icon: '🇷🇺', tag: 'tag-rsa' },
+    'ESA':       { icon: '🇪🇺', tag: 'tag-esa' },
+    'CMSA':      { icon: '🇨🇳', tag: 'tag-cmsa' },
+    'JAXA':      { icon: '🇯🇵', tag: 'tag-jaxa' },
+    'SpaceX':    { icon: '🚀', tag: 'tag-agency' },
+    'Axiom':     { icon: '🛰️', tag: 'tag-agency' }
+  };
+
   const now = Math.floor(Date.now() / 1000);
 
-  el.crewList.innerHTML = crew
-    .map(m => {
-      const daysInSpace = m.launched ? Math.floor((now - m.launched) / 86400) : 0;
-      const station = m.iss ? 'ISS' : 'TIANGONG';
-      const stationClass = m.iss ? 'tag-iss' : 'tag-tiangong';
+  // Group crew by agency
+  const groups = crew.reduce((acc, member) => {
+    const agency = member.agency || 'Other';
+    if (!acc[agency]) acc[agency] = [];
+    acc[agency].push(member);
+    return acc;
+  }, {});
+
+  // Sort agencies: NASA first, Roscosmos second, others alphabetical
+  const sortedAgencies = Object.keys(groups).sort((a, b) => {
+    if (a === 'NASA') return -1;
+    if (b === 'NASA') return 1;
+    if (a === 'Roscosmos' || a === 'RSA') return -1;
+    if (b === 'Roscosmos' || b === 'RSA') return 1;
+    return a.localeCompare(b);
+  });
+
+  el.crewList.innerHTML = sortedAgencies
+    .map(agency => {
+      const meta = agencyMeta[agency] || { icon: '👨‍🚀', tag: 'tag-agency' };
+      const members = groups[agency];
       
+      const groupHtml = members
+        .map(m => {
+          const daysInSpace = m.launched ? Math.floor((now - m.launched) / 86400) : 0;
+          const station = m.iss ? 'ISS' : 'TIANGONG';
+          const stationClass = m.iss ? 'tag-iss' : 'tag-tiangong';
+          
+          return `
+            <a class="crew-card" href="${m.url || '#'}" target="_blank" rel="noopener noreferrer">
+              <div class="crew-photo-container">
+                ${m.image 
+                  ? `<img class="crew-photo" src="${m.image}" alt="${m.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` 
+                  : ''}
+                <span class="crew-photo-placeholder" style="${m.image ? 'display:none' : 'display:block'}">👨‍🚀</span>
+              </div>
+              <div class="crew-info">
+                <div class="crew-header">
+                  <span class="crew-name">${m.name}</span>
+                  ${m.flag_code ? `<img class="crew-flag" src="https://flagcdn.com/${m.flag_code.toLowerCase()}.svg" alt="${m.country}">` : ''}
+                </div>
+                <span class="crew-role">${m.position || 'Astronaut'}</span>
+                <div class="crew-meta">
+                  <span class="crew-spacecraft">🚀 ${m.spacecraft || 'Unknown'}</span>
+                  <span class="crew-duration">⏳ ${daysInSpace} days</span>
+                </div>
+                <div class="crew-tags">
+                  <span class="crew-tag ${stationClass}">${station}</span>
+                  <span class="crew-tag ${meta.tag}">${agency}</span>
+                </div>
+              </div>
+            </a>
+          `;
+        })
+        .join('');
+
       return `
-        <a class="crew-card" href="${m.url || '#'}" target="_blank" rel="noopener noreferrer">
-          <div class="crew-photo-container">
-            ${m.image 
-              ? `<img class="crew-photo" src="${m.image}" alt="${m.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` 
-              : ''}
-            <span class="crew-photo-placeholder" style="${m.image ? 'display:none' : 'display:block'}">👨‍🚀</span>
+        <div class="agency-group">
+          <div class="agency-header">
+            <span class="agency-icon">${meta.icon}</span>
+            <span class="agency-label">${agency}</span>
           </div>
-          <div class="crew-info">
-            <div class="crew-header">
-              <span class="crew-name">${m.name}</span>
-              ${m.flag_code ? `<img class="crew-flag" src="https://flagcdn.com/${m.flag_code.toLowerCase()}.svg" alt="${m.country}">` : ''}
-            </div>
-            <span class="crew-role">${m.position || 'Astronaut'}</span>
-            <div class="crew-meta">
-              <span class="crew-spacecraft">🚀 ${m.spacecraft || 'Unknown'}</span>
-              <span class="crew-duration">⏳ ${daysInSpace} days</span>
-            </div>
-            <div class="crew-tags">
-              <span class="crew-tag ${stationClass}">${station}</span>
-              ${m.agency ? `<span class="crew-tag tag-agency">${m.agency}</span>` : ''}
-            </div>
+          <div class="crew-list">
+            ${groupHtml}
           </div>
-        </a>
+        </div>
       `;
     })
     .join('');

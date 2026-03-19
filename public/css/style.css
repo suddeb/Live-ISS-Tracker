@@ -313,12 +313,36 @@ html, body {
   margin-left: auto;
 }
 
+.agency-group {
+  margin-bottom: 16px;
+}
+
+.agency-header {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 2px solid var(--accent-blue);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agency-icon {
+  font-size: 12px;
+  filter: grayscale(0.2) brightness(1.2);
+}
+
 .crew-list {
   list-style: none;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
-  margin-top: 4px;
+  gap: 8px;
 }
 
 .crew-card {
@@ -455,9 +479,39 @@ html, body {
 }
 
 .tag-agency {
-  background: rgba(0, 255, 136, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  border: 0.5px solid rgba(255, 255, 255, 0.2);
+}
+
+.tag-nasa {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--accent-blue);
+  border: 0.5px solid rgba(0, 212, 255, 0.3);
+}
+
+.tag-rsa, .tag-roscosmos {
+  background: rgba(255, 64, 96, 0.15);
+  color: var(--accent-red);
+  border: 0.5px solid rgba(255, 64, 96, 0.3);
+}
+
+.tag-esa {
+  background: rgba(0, 255, 136, 0.15);
   color: var(--accent-green);
-  border: 0.5px solid rgba(0, 255, 136, 0.25);
+  border: 0.5px solid rgba(0, 255, 136, 0.3);
+}
+
+.tag-jaxa {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 0.5px solid rgba(255, 255, 255, 0.4);
+}
+
+.tag-cmsa {
+  background: rgba(255, 208, 77, 0.15);
+  color: #ffd04d;
+  border: 0.5px solid rgba(255, 208, 77, 0.3);
 }
 
 .crew-item.placeholder {

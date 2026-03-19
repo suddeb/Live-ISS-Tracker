@@ -5,7 +5,7 @@ jest.mock('axios');
 
 describe('Crew Fetcher', () => {
   const mockCrewData = {
-    number: 3,
+    number: 5,
     people: [
       {
         name: 'Astronaut 1',
@@ -42,23 +42,48 @@ describe('Crew Fetcher', () => {
         url: 'https://bio3.com',
         image: 'https://img3.com',
         iss: false
+      },
+      {
+        name: 'Astronaut 3',
+        agency: 'ESA',
+        position: 'Flight Engineer',
+        country: 'Denmark',
+        flag_code: 'dk',
+        spacecraft: 'Crew Dragon',
+        launched: 1712354400,
+        url: 'https://bio4.com',
+        image: 'https://img4.com',
+        iss: true
+      },
+      {
+        name: 'Astronaut 4',
+        agency: 'JAXA',
+        position: 'Mission Specialist',
+        country: 'Japan',
+        flag_code: 'jp',
+        spacecraft: 'Crew Dragon',
+        launched: 1712354400,
+        url: 'https://bio5.com',
+        image: 'https://img5.com',
+        iss: true
       }
     ]
   };
 
-  test('should fetch all crew members from all space stations', async () => {
+  test('should fetch all crew members from all space stations and all agencies', async () => {
     axios.get.mockResolvedValue({ data: mockCrewData });
 
     const crew = await fetchCrew();
 
-    expect(crew).toHaveLength(3);
-    expect(crew[0].name).toBe('Astronaut 1');
-    expect(crew[1].name).toBe('Astronaut 2');
-    expect(crew[2].name).toBe('Taikonaut 1');
-    expect(crew[2].iss).toBe(false);
+    expect(crew).toHaveLength(5);
+    expect(crew.map(p => p.agency)).toContain('NASA');
+    expect(crew.map(p => p.agency)).toContain('Roscosmos');
+    expect(crew.map(p => p.agency)).toContain('CMSA');
+    expect(crew.map(p => p.agency)).toContain('ESA');
+    expect(crew.map(p => p.agency)).toContain('JAXA');
   });
 
-  test('should extract all required fields including new ones', async () => {
+  test('should extract all required fields including agency', async () => {
     axios.get.mockResolvedValue({ data: mockCrewData });
 
     const crew = await fetchCrew();

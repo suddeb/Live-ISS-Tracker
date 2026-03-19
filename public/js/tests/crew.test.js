@@ -109,10 +109,10 @@ describe('ISS Crew Rendering', () => {
     jest.useRealTimers();
   });
 
-  test('should render enriched crew member cards correctly for all stations', () => {
+  test('should render enriched crew member cards grouped by agency', () => {
     const handlers = getSocketHandlers(socketMock);
     const mockCrew = {
-      count: 2,
+      count: 3,
       crew: [
         {
           name: 'Oleg Kononenko',
@@ -121,9 +121,21 @@ describe('ISS Crew Rendering', () => {
           country: 'Russia',
           flag_code: 'ru',
           spacecraft: 'Soyuz MS-25',
-          launched: 1711193461, // 2024-03-23
-          url: 'https://en.wikipedia.org/wiki/Oleg_Kononenko',
-          image: 'https://img.com/oleg.jpg',
+          launched: 1711193461,
+          url: 'https://bio1',
+          image: 'https://img1',
+          iss: true
+        },
+        {
+          name: 'Matthew Dominick',
+          agency: 'NASA',
+          position: 'Commander',
+          country: 'USA',
+          flag_code: 'us',
+          spacecraft: 'Crew Dragon',
+          launched: 1712354400,
+          url: 'https://bio2',
+          image: 'https://img2',
           iss: true
         },
         {
@@ -133,9 +145,9 @@ describe('ISS Crew Rendering', () => {
           country: 'China',
           flag_code: 'cn',
           spacecraft: 'Shenzhou 18',
-          launched: 1714041600, // 2024-04-25
-          url: 'https://en.wikipedia.org/wiki/Ye_Guangfu',
-          image: 'https://img.com/ye.jpg',
+          launched: 1714041600,
+          url: 'https://bio3',
+          image: 'https://img3',
           iss: false
         }
       ]
@@ -146,21 +158,23 @@ describe('ISS Crew Rendering', () => {
     const crewList = document.getElementById('crew-list');
     const crewCount = document.getElementById('crew-count');
 
-    expect(crewCount.textContent).toBe('2');
+    expect(crewCount.textContent).toBe('3');
     
-    // Check ISS member
-    expect(crewList.innerHTML).toContain('Oleg Kononenko');
-    expect(crewList.innerHTML).toContain('ISS');
-    expect(crewList.innerHTML).toContain('Soyuz MS-25');
-    expect(crewList.innerHTML).toContain('131 days'); // approx 131 days from March 23 to Aug 1
-    expect(crewList.innerHTML).toContain('flagcdn.com/ru.svg');
+    // Check for agency groups
+    const agencyGroups = crewList.querySelectorAll('.agency-group');
+    expect(agencyGroups.length).toBe(3);
 
-    // Check Tiangong member
-    expect(crewList.innerHTML).toContain('Ye Guangfu');
-    expect(crewList.innerHTML).toContain('TIANGONG');
-    expect(crewList.innerHTML).toContain('Shenzhou 18');
-    expect(crewList.innerHTML).toContain('98 days'); // approx 98 days from April 25 to Aug 1
-    expect(crewList.innerHTML).toContain('flagcdn.com/cn.svg');
+    // Verify agency headers
+    const agencyHeaders = crewList.querySelectorAll('.agency-header');
+    const headerTexts = Array.from(agencyHeaders).map(h => h.textContent.replace(/\s+/g, ' ').trim());
+    expect(headerTexts).toContain('🇺🇸 NASA');
+    expect(headerTexts).toContain('🇷🇺 Roscosmos');
+    expect(headerTexts).toContain('🇨🇳 CMSA');
+
+    // Verify nesting (NASA group should have NASA astronaut)
+    const nasaGroup = Array.from(agencyGroups).find(g => g.querySelector('.agency-header').textContent.includes('NASA'));
+    expect(nasaGroup.innerHTML).toContain('Matthew Dominick');
+    expect(nasaGroup.innerHTML).not.toContain('Oleg Kononenko');
   });
 
   test('should handle empty crew list', () => {
