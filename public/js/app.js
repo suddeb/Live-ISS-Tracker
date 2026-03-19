@@ -295,7 +295,24 @@ function updateCrew(data) {
   }
 
   el.crewList.innerHTML = crew
-    .map(m => `<li class="crew-item">${m.name}</li>`)
+    .map(m => `
+      <a class="crew-card" href="${m.url || '#'}" target="_blank" rel="noopener noreferrer">
+        <div class="crew-photo-container">
+          ${m.image 
+            ? `<img class="crew-photo" src="${m.image}" alt="${m.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` 
+            : ''}
+          <span class="crew-photo-placeholder" style="${m.image ? 'display:none' : 'display:block'}">👨‍🚀</span>
+        </div>
+        <div class="crew-info">
+          <span class="crew-name">${m.name}</span>
+          <span class="crew-role">${m.position || 'Astronaut'}</span>
+          <div class="crew-tags">
+            ${m.agency ? `<span class="crew-tag tag-agency">${m.agency}</span>` : ''}
+            ${m.country ? `<span class="crew-tag tag-country">${m.country}</span>` : ''}
+          </div>
+        </div>
+      </a>
+    `)
     .join('');
 }
 
