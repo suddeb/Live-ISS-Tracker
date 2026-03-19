@@ -12,6 +12,7 @@ const state = {
   velUnit:          'kmh',    // 'kmh' | 'mph'
   distanceTraveled: 0,        // km since page load
   updateCount:      0,
+  isInitialCenteringDone: false, // track if we already centered once
   terminatorLayer:  null,
   dayLayer:         null,   // white brightness overlay for the day side
   terminatorActive: false
@@ -26,6 +27,21 @@ const map = L.map('map', {
   attributionControl: true
 });
 
+// ─── ISS Marker & Footprint ───────────────────────────────────────────────────
+
+const issMarker = L.marker([20, 0], {
+  zIndexOffset: 1000
+}).addTo(map);
+
+const footprintCircle = L.circle([20, 0], {
+  radius:      2200000,   // ~2,200 km default
+  color:       '#00d4ff',
+  weight:      1,
+  opacity:     0.5,
+  fillColor:   '#00d4ff',
+  fillOpacity: 0.06
+}).addTo(map);
+
 // Dark tile layer (CartoDB Dark Matter)
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
@@ -33,7 +49,7 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
   maxZoom: 18
 }).addTo(map);
 
-// ─── ISS Marker ───────────────────────────────────────────────────────────────
+// ─── ISS Marker Icon ─────────────────────────────────────────────────────────
 
 /**
  * Build the SVG satellite DivIcon.
@@ -71,21 +87,7 @@ function createISSIcon(bearing = 0) {
   });
 }
 
-const issMarker = L.marker([20, 0], {
-  icon: createISSIcon(0),
-  zIndexOffset: 1000
-}).addTo(map);
-
-// ─── Footprint Circle ─────────────────────────────────────────────────────────
-
-const footprintCircle = L.circle([20, 0], {
-  radius:      2200000,   // ~2,200 km default
-  color:       '#00d4ff',
-  weight:      1,
-  opacity:     0.5,
-  fillColor:   '#00d4ff',
-  fillOpacity: 0.06
-}).addTo(map);
+issMarker.setIcon(createISSIcon(0));
 
 // ─── Orbital Path Layers ──────────────────────────────────────────────────────
 
@@ -318,6 +320,14 @@ socket.on('iss:position', (data) => {
   if (el.overlay && !el.overlay.classList.contains('hidden')) {
     el.overlay.classList.add('hidden');
   }
+
+  // Initial Auto-Center logic
+  if (!state.isInitialCenteringDone) {
+    const latlng = L.latLng(data.latitude, data.longitude);
+    map.panTo(latlng, { animate: true, duration: 1.5 });
+    state.isInitialCenteringDone = true;
+  }
+
   updateTelemetry(data);
   updateMap(data);
 });
@@ -466,3 +476,9 @@ map.on('click', () => {
     el.sidebar.classList.remove('open');
   }
 });
+
+// Expose state and other objects for testing if in a test environment
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { state, map, issMarker, footprintCircle };
+}
+
