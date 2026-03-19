@@ -14,6 +14,7 @@ const cron         = require('node-cron');
 const rateLimit    = require('express-rate-limit');
 const satellite    = require('satellite.js');
 const path         = require('path');
+const { fetchCrew } = require('./lib/crewFetcher');
 
 // ─── App Setup ───────────────────────────────────────────────────────────────
 
@@ -174,8 +175,7 @@ app.get('/api/iss/position', async (req, res) => {
 // GET /api/iss/astronauts – current ISS crew
 app.get('/api/iss/astronauts', async (req, res) => {
   try {
-    const data = await fetchWithRetry('http://api.open-notify.org/astros.json');
-    const crew = (data.people || []).filter(p => p.craft === 'ISS');
+    const crew = await fetchCrew();
     res.json({ crew, count: crew.length });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] /api/iss/astronauts error:`, err.message);
@@ -307,18 +307,17 @@ let positionInterval = setInterval(async () => {
   }
 }, 2000);
 
-// Every 60 seconds – broadcast crew list
+// Every 10 minutes – broadcast crew list
 async function broadcastAstronauts() {
   try {
-    const data = await fetchWithRetry('http://api.open-notify.org/astros.json');
-    currentAstronauts = (data.people || []).filter(p => p.craft === 'ISS');
+    currentAstronauts = await fetchCrew();
     io.emit('iss:astronauts', { crew: currentAstronauts, count: currentAstronauts.length });
   } catch (err) {
     console.error(`[${new Date().toISOString()}] Astronaut broadcast error:`, err.message);
   }
 }
 broadcastAstronauts(); // initial load
-cron.schedule('*/60 * * * * *', broadcastAstronauts);
+cron.schedule('*/10 * * * *', broadcastAstronauts);
 
 // Every 30 minutes – refresh TLE and recompute orbital path
 async function broadcastTLE() {
