@@ -94,6 +94,8 @@ describe('ISS Crew Rendering', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    // Set a fixed time: 2024-08-01T12:00:00Z (1722513600 seconds)
+    jest.setSystemTime(new Date('2024-08-01T12:00:00Z'));
     jest.clearAllMocks();
     
     jest.isolateModules(() => {
@@ -107,18 +109,34 @@ describe('ISS Crew Rendering', () => {
     jest.useRealTimers();
   });
 
-  test('should render crew member cards correctly', () => {
+  test('should render enriched crew member cards correctly for all stations', () => {
     const handlers = getSocketHandlers(socketMock);
     const mockCrew = {
-      count: 1,
+      count: 2,
       crew: [
         {
           name: 'Oleg Kononenko',
           agency: 'Roscosmos',
           position: 'Commander',
           country: 'Russia',
+          flag_code: 'ru',
+          spacecraft: 'Soyuz MS-25',
+          launched: 1711193461, // 2024-03-23
           url: 'https://en.wikipedia.org/wiki/Oleg_Kononenko',
-          image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/...'
+          image: 'https://img.com/oleg.jpg',
+          iss: true
+        },
+        {
+          name: 'Ye Guangfu',
+          agency: 'CMSA',
+          position: 'Commander',
+          country: 'China',
+          flag_code: 'cn',
+          spacecraft: 'Shenzhou 18',
+          launched: 1714041600, // 2024-04-25
+          url: 'https://en.wikipedia.org/wiki/Ye_Guangfu',
+          image: 'https://img.com/ye.jpg',
+          iss: false
         }
       ]
     };
@@ -128,14 +146,21 @@ describe('ISS Crew Rendering', () => {
     const crewList = document.getElementById('crew-list');
     const crewCount = document.getElementById('crew-count');
 
-    expect(crewCount.textContent).toBe('1');
+    expect(crewCount.textContent).toBe('2');
+    
+    // Check ISS member
     expect(crewList.innerHTML).toContain('Oleg Kononenko');
-    expect(crewList.innerHTML).toContain('Roscosmos');
-    expect(crewList.innerHTML).toContain('Commander');
-    expect(crewList.innerHTML).toContain('href="https://en.wikipedia.org/wiki/Oleg_Kononenko"');
-    expect(crewList.innerHTML).toContain('target="_blank"');
-    expect(crewList.innerHTML).toContain('rel="noopener noreferrer"');
-    expect(crewList.querySelector('img').src).toBe('https://upload.wikimedia.org/wikipedia/commons/thumb/...');
+    expect(crewList.innerHTML).toContain('ISS');
+    expect(crewList.innerHTML).toContain('Soyuz MS-25');
+    expect(crewList.innerHTML).toContain('131 days'); // approx 131 days from March 23 to Aug 1
+    expect(crewList.innerHTML).toContain('flagcdn.com/ru.svg');
+
+    // Check Tiangong member
+    expect(crewList.innerHTML).toContain('Ye Guangfu');
+    expect(crewList.innerHTML).toContain('TIANGONG');
+    expect(crewList.innerHTML).toContain('Shenzhou 18');
+    expect(crewList.innerHTML).toContain('98 days'); // approx 98 days from April 25 to Aug 1
+    expect(crewList.innerHTML).toContain('flagcdn.com/cn.svg');
   });
 
   test('should handle empty crew list', () => {

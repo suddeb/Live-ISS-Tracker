@@ -373,17 +373,32 @@ html, body {
   min-width: 0;
 }
 
+.crew-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
 .crew-name {
   display: block;
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: 0.5px;
+}
+
+.crew-flag {
+  width: 16px;
+  height: auto;
+  border-radius: 2px;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
 }
 
 .crew-role {
@@ -391,16 +406,32 @@ html, body {
   font-size: 9px;
   color: var(--text-secondary);
   line-height: 1.2;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.crew-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.crew-spacecraft, .crew-duration {
+  font-size: 8.5px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .crew-tags {
   display: flex;
   gap: 4px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .crew-tag {
@@ -411,16 +442,22 @@ html, body {
   text-transform: uppercase;
 }
 
+.tag-iss {
+  background: rgba(0, 212, 255, 0.15);
+  color: var(--accent-blue);
+  border: 0.5px solid rgba(0, 212, 255, 0.3);
+}
+
+.tag-tiangong {
+  background: rgba(255, 140, 0, 0.15);
+  color: var(--accent-orange);
+  border: 0.5px solid rgba(255, 140, 0, 0.3);
+}
+
 .tag-agency {
   background: rgba(0, 255, 136, 0.12);
   color: var(--accent-green);
   border: 0.5px solid rgba(0, 255, 136, 0.25);
-}
-
-.tag-country {
-  background: rgba(0, 212, 255, 0.12);
-  color: var(--accent-blue);
-  border: 0.5px solid rgba(0, 212, 255, 0.25);
 }
 
 .crew-item.placeholder {
