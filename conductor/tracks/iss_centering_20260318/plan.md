@@ -15,12 +15,13 @@
 
 
 ### Task 1.2: Dynamic Zooming Based on Footprint
-- [ ] **Task: Write Tests for Dynamic Zooming**
-    - [ ] Verify map zoom level is adjusted to fit the ~2,200 km radius circle (visibility footprint).
-- [ ] **Task: Implement Zoom Fitting Logic**
-    - [ ] Use `map.fitBounds(footprintCircle.getBounds())` or similar logic to calculate the optimal zoom level.
-    - [ ] Ensure the "World View" (zoom ~4) is the baseline before fitting the bounds.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 1: Dynamic Zooming' (Protocol in workflow.md)**
+- [x] **Task: Write Tests for Dynamic Zooming**
+    - [x] Verify map zoom level is adjusted to fit the ~2,200 km radius circle (visibility footprint).
+- [x] **Task: Implement Zoom Fitting Logic**
+    - [x] Use `map.fitBounds(footprintCircle.getBounds())` or similar logic to calculate the optimal zoom level.
+    - [x] Ensure the "World View" (zoom ~4) is the baseline before fitting the bounds.
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Dynamic Zooming' (Protocol in workflow.md) [22f0bab]
+
 
 ## Phase 2: Follow Mode UI and Logic
 
