@@ -26,24 +26,24 @@
 ## Phase 2: Follow Mode UI and Logic
 
 ### Task 2.1: Implement Follow Mode UI
-- [ ] **Task: Create "Follow ISS" Toggle Button**
-    - [ ] Add a button to `public/index.html` within the existing telemetry or control panel.
-    - [ ] Style the button using the established dark space/glassmorphism aesthetic in `public/css/style.css`.
-- [ ] **Task: Handle Button Click Interaction**
-    - [ ] Add an event listener in `public/js/app.js` to toggle the "Follow" state.
-    - [ ] Update button UI (e.g., color, text, or icon) to reflect the active/inactive state.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2: Follow Mode UI' (Protocol in workflow.md)**
+- [x] **Task: Create "Follow ISS" Toggle Button**
+    - [x] Add a button to `public/index.html` within the existing telemetry or control panel.
+    - [x] Style the button using the established dark space/glassmorphism aesthetic in `public/css/style.css`.
+- [x] **Task: Handle Button Click Interaction**
+    - [x] Add an event listener in `public/js/app.js` to toggle the "Follow" state.
+    - [x] Update button UI (e.g., color, text, or icon) to reflect the active/inactive state.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Follow Mode UI' (Protocol in workflow.md) [73191da]
 
 ### Task 2.2: Implement Follow Mode Logic
-- [ ] **Task: Write Tests for Continuous Following**
-    - [ ] Mock multiple `iss:position` updates.
-    - [ ] Verify that the map re-centers when "Follow" mode is active.
-- [ ] **Task: Implement Continuous Centering**
-    - [ ] Update the `iss:position` event listener to re-center the map if `isFollowModeActive` is `true`.
-- [ ] **Task: Disable Follow Mode on Manual Pan (Optional Improvement)**
-    - [ ] Listen for Leaflet's `movestart` or `dragstart` events triggered by user interaction.
-    - [ ] Automatically disable "Follow" mode if the user manually moves the map.
-- [ ] **Task: Conductor - User Manual Verification 'Phase 2: Follow Mode Logic' (Protocol in workflow.md)**
+- [x] **Task: Write Tests for Continuous Following**
+    - [x] Mock multiple `iss:position` updates.
+    - [x] Verify that the map re-centers when "Follow" mode is active.
+- [x] **Task: Implement Continuous Centering**
+    - [x] Update the `iss:position` event listener to re-center the map if `isFollowModeActive` is `true`.
+- [x] **Task: Disable Follow Mode on Manual Pan (Optional Improvement)**
+    - [x] Listen for Leaflet's `movestart` or `dragstart` events triggered by user interaction.
+    - [x] Automatically disable "Follow" mode if the user manually moves the map.
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Follow Mode Logic' (Protocol in workflow.md) [73191da]
 
 ## Phase 3: Final Verification and Cleanup
 - [ ] **Task: Run Full Test Suite**
