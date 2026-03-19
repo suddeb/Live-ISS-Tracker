@@ -150,4 +150,54 @@ describe('ISS Initial Centering', () => {
 
     expect(mapInstance.panTo.mock.calls.length).toBe(callsAfterFirst);
   });
+
+  test('should continuously center map when following is active', () => {
+    const handlers = getSocketHandlers(socketMock);
+    const mockData = { latitude: 45.0, longitude: -90.0 };
+
+    // Enable following
+    app.state.following = true;
+
+    // First update
+    handlers['iss:position'](mockData);
+    const mapInstance = app.map;
+    const callsAfterFirst = mapInstance.panTo.mock.calls.length;
+
+    // Second update
+    handlers['iss:position']({ latitude: 46.0, longitude: -91.0 });
+
+    expect(mapInstance.panTo.mock.calls.length).toBe(callsAfterFirst + 1);
+    expect(mapInstance.panTo).toHaveBeenLastCalledWith(
+      expect.objectContaining({ lat: 46.0, lon: -91.0 }),
+      expect.any(Object)
+    );
+  });
+
+  test('should disable follow mode on manual map interaction', () => {
+    // Helper to get map event handlers
+    function getMapHandlers(mapMock) {
+      const handlers = {};
+      mapMock.on.mock.calls.forEach(([event, handler]) => {
+        // Handle space-separated events like 'dragstart zoomstart'
+        event.split(' ').forEach(ev => {
+          handlers[ev] = handler;
+        });
+      });
+      return handlers;
+    }
+
+    const mapHandlers = getMapHandlers(app.map);
+    
+    // Enable following
+    app.state.following = true;
+    document.getElementById('follow-btn').classList.add('active');
+    document.getElementById('follow-btn').textContent = '⏸ Following';
+
+    // Simulate drag start
+    mapHandlers['dragstart']();
+
+    expect(app.state.following).toBe(false);
+    expect(document.getElementById('follow-btn').classList.contains('active')).toBe(false);
+    expect(document.getElementById('follow-btn').textContent).toBe('▶ Follow ISS');
+  });
 });

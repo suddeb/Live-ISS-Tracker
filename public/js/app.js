@@ -488,6 +488,27 @@ map.on('click', () => {
   }
 });
 
+// Disable follow mode on manual map interaction
+map.on('movestart', (e) => {
+  // Check if the move was triggered by user (not by panTo/flyTo)
+  // Leaflet doesn't provide a direct "isUserTriggered" flag in movestart,
+  // but we can check if it was triggered by our own panTo calls.
+  // Actually, a simpler way is to check if it was a drag, zoom, etc.
+  if (state.following) {
+    // We only disable if it's NOT a programmatic move.
+    // In Leaflet, programmatic moves like panTo don't have an 'originalEvent'.
+  }
+});
+
+// A more robust way to detect manual interaction is to listen to specific user events
+map.on('dragstart zoomstart', () => {
+  if (state.following) {
+    state.following = false;
+    el.followBtn.classList.remove('active');
+    el.followBtn.textContent = '▶ Follow ISS';
+  }
+});
+
 // Expose state and other objects for testing if in a test environment
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { state, map, issMarker, footprintCircle };
