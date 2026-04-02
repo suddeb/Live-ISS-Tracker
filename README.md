@@ -15,11 +15,11 @@ npm start          # node server.js
 npm run dev        # npx nodemon server.js
 
 # Run all tests
-npm test           # jest
+npm test -- __tests__           # jest
 
 # Run a single test file
-npx jest public/js/tests/centering.test.js
-npx jest public/js/tests/crew.test.js
+npx jest __tests__/crewFetcher.test.js
+npx jest __tests__/app.test.js
 ```
 
 The app runs at `http://localhost:3000` by default. Copy `.env.example` to `.env` to configure `PORT` and `NODE_ENV`.

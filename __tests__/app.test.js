@@ -354,6 +354,9 @@ describe('createISSIcon (via updateMap)', () => {
     L.divIcon.mockClear();
     mockMarkerInstance.setIcon.mockClear();
     state.isInitialCenteringDone = true;
+    global.fetch = jest.fn().mockResolvedValue({
+      json: jest.fn().mockResolvedValue({})
+    });
   });
 
   it('produces a 40×40 DivIcon', () => {
@@ -572,8 +575,7 @@ describe('Socket.IO — iss:position', () => {
     });
 
     fire({ ...BASE_POSITION, latitude: uniqueLat, longitude: uniqueLon });
-    await Promise.resolve(); // flush microtasks
-    await Promise.resolve();
+    await flushPromises();
 
     global.fetch.mockClear();
     fire({ ...BASE_POSITION, latitude: uniqueLat, longitude: uniqueLon }); // same cell
@@ -583,8 +585,7 @@ describe('Socket.IO — iss:position', () => {
   it('shows "--" when the location fetch fails', async () => {
     global.fetch = jest.fn().mockRejectedValue(new Error('network error'));
     fire({ ...BASE_POSITION, latitude: -70, longitude: -70 });
-    await Promise.resolve();
-    await Promise.resolve();
+    await flushPromises();
     expect(document.getElementById('telem-location').textContent).toBe('--');
   });
 
