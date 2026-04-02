@@ -5,6 +5,20 @@
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
+/**
+ * @description Global application state shared across all UI and map update functions.
+ *
+ * @property {?{lat: number, lng: number}} lastPosition - Coordinates of the previous ISS update; null before the first update.
+ * @property {boolean} following - Whether the map auto-pans to track the ISS on each position update.
+ * @property {'km'|'mi'} altUnit - Display unit for altitude.
+ * @property {'kmh'|'mph'} velUnit - Display unit for velocity.
+ * @property {number} distanceTraveled - Cumulative great-circle distance (km) traveled since page load.
+ * @property {number} updateCount - Total number of `iss:position` events received this session.
+ * @property {boolean} isInitialCenteringDone - Guards the one-time auto-center + zoom-to-footprint on first fix.
+ * @property {?L.Layer} terminatorLayer - Active Leaflet.Terminator night-side polygon, or null when disabled.
+ * @property {?L.Rectangle} dayLayer - White brightness overlay covering the full world on the day side, or null when disabled.
+ * @property {boolean} terminatorActive - Whether the day/night terminator overlay is currently shown.
+ */
 const state = {
   lastPosition:     null,     // { lat, lng } of previous update
   following:        false,    // whether map auto-pans to ISS
@@ -20,6 +34,11 @@ const state = {
 
 // ─── Map Setup ────────────────────────────────────────────────────────────────
 
+/**
+ * @description Leaflet map instance centred on [20, 0] at zoom 3.
+ * Rendered into the `#map` DOM element.
+ * @type {L.Map}
+ */
 const map = L.map('map', {
   center: [20, 0],
   zoom: 3,
@@ -29,10 +48,20 @@ const map = L.map('map', {
 
 // ─── ISS Marker & Footprint ───────────────────────────────────────────────────
 
+/**
+ * @description Leaflet marker representing the current ISS position.
+ * Icon is replaced on every position update via {@link createISSIcon}.
+ * @type {L.Marker}
+ */
 const issMarker = L.marker([20, 0], {
   zIndexOffset: 1000
 }).addTo(map);
 
+/**
+ * @description Circle overlay visualising the ISS radio/visibility footprint.
+ * Radius is updated from `footprint_radius_km` in each position payload.
+ * @type {L.Circle}
+ */
 const footprintCircle = L.circle([20, 0], {
   radius:      2200000,   // ~2,200 km default
   color:       '#00d4ff',
@@ -52,8 +81,16 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 // ─── ISS Marker Icon ─────────────────────────────────────────────────────────
 
 /**
- * Build the SVG satellite DivIcon.
- * @param {number} bearing  – degrees, used to rotate the icon
+ * @description Builds a Leaflet `DivIcon` containing an inline SVG of the ISS
+ * rotated to match its current travel bearing. Two animated pulse rings are
+ * included for visual flair.
+ *
+ * @param {number} [bearing=0] - Clockwise rotation in degrees (0 = north-up).
+ * @returns {L.DivIcon} A 40×40 pixel icon anchored at its centre.
+ *
+ * @example
+ * // Point the icon north-east
+ * issMarker.setIcon(createISSIcon(45));
  */
 function createISSIcon(bearing = 0) {
   return L.divIcon({
@@ -91,17 +128,48 @@ issMarker.setIcon(createISSIcon(0));
 
 // ─── Orbital Path Layers ──────────────────────────────────────────────────────
 
+/**
+ * @description Stores active multi-segment polylines for the past and predicted
+ * future orbital paths. Segments are kept separate to handle antimeridian
+ * wrapping without distorting the lines.
+ *
+ * @type {{ past: L.Polyline[], future: L.Polyline[] }}
+ */
 // Hold multi-segment polylines (antimeridian-safe)
 const pathLayers = {
   past:   [],   // cyan solid segments
   future: []    // orange dashed segments
 };
 
+/**
+ * @description Removes all polylines of the given type from the map and clears
+ * the corresponding array in {@link pathLayers}.
+ *
+ * @param {'past'|'future'} type - Which set of path layers to clear.
+ *
+ * @example
+ * clearPathLayers('past');
+ */
 function clearPathLayers(type) {
   pathLayers[type].forEach(l => map.removeLayer(l));
   pathLayers[type] = [];
 }
 
+/**
+ * @description Replaces the polylines for a given path type with new segments
+ * received from the server. Past segments are rendered as solid cyan lines;
+ * future segments as dashed orange lines.
+ *
+ * Each segment is an array of `[lat, lng]` pairs. Segments with fewer than
+ * two points are skipped to avoid degenerate polylines.
+ *
+ * @param {Array<Array<[number, number]>>} segments - Antimeridian-safe path segments.
+ * @param {'past'|'future'} type - Whether these are past-track or predicted-future segments.
+ *
+ * @example
+ * drawPathSegments(data.past, 'past');
+ * drawPathSegments(data.future, 'future');
+ */
 function drawPathSegments(segments, type) {
   clearPathLayers(type);
   const isPast = type === 'past';
@@ -119,6 +187,20 @@ function drawPathSegments(segments, type) {
 
 // ─── Utility: Haversine Distance ──────────────────────────────────────────────
 
+/**
+ * @description Computes the great-circle distance between two geographic points
+ * using the Haversine formula. Suitable for the short inter-update distances
+ * produced by ISS telemetry (typically < 100 km between ticks).
+ *
+ * @param {number} lat1 - Latitude of point A in decimal degrees.
+ * @param {number} lon1 - Longitude of point A in decimal degrees.
+ * @param {number} lat2 - Latitude of point B in decimal degrees.
+ * @param {number} lon2 - Longitude of point B in decimal degrees.
+ * @returns {number} Distance in kilometres.
+ *
+ * @example
+ * const km = haversineKm(51.5, -0.1, 48.8, 2.3); // London → Paris ≈ 340 km
+ */
 function haversineKm(lat1, lon1, lat2, lon2) {
   const R  = 6371;
   const dL = (lat2 - lat1) * Math.PI / 180;
@@ -131,6 +213,20 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 
 // ─── Utility: Bearing ─────────────────────────────────────────────────────────
 
+/**
+ * @description Calculates the initial bearing (forward azimuth) from point A to
+ * point B on the surface of a sphere. Used to orient the ISS marker icon so it
+ * points in the direction of travel.
+ *
+ * @param {number} lat1 - Latitude of the origin point in decimal degrees.
+ * @param {number} lon1 - Longitude of the origin point in decimal degrees.
+ * @param {number} lat2 - Latitude of the destination point in decimal degrees.
+ * @param {number} lon2 - Longitude of the destination point in decimal degrees.
+ * @returns {number} Bearing in degrees, normalised to [0, 360).
+ *
+ * @example
+ * const deg = bearing(51.5, -0.1, 48.8, 2.3); // ≈ 156° (south-east)
+ */
 function bearing(lat1, lon1, lat2, lon2) {
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const la1  = lat1 * Math.PI / 180;
@@ -142,13 +238,64 @@ function bearing(lat1, lon1, lat2, lon2) {
 
 // ─── Utility: Format Numbers ──────────────────────────────────────────────────
 
+/**
+ * @description Formats a number for display using the `en-US` locale with a
+ * configurable maximum number of decimal places. Adds thousands separators
+ * automatically (e.g. `7826.1` → `"7,826.1"`).
+ *
+ * @param {number} n - The number to format.
+ * @param {number} [decimals=1] - Maximum number of fractional digits to show.
+ * @returns {string} Locale-formatted string.
+ *
+ * @example
+ * fmt(27600.5);    // "27,600.5"
+ * fmt(408.2, 0);   // "408"
+ */
 function fmt(n, decimals = 1) {
   return Number(n).toLocaleString('en-US', { maximumFractionDigits: decimals });
 }
 
 // ─── DOM Helpers ──────────────────────────────────────────────────────────────
 
+/**
+ * @description Shorthand alias for `document.getElementById`.
+ * @param {string} id - The element ID to look up.
+ * @returns {HTMLElement|null} The matching element, or null if not found.
+ */
 const $  = id => document.getElementById(id);
+
+/**
+ * @description Cached references to frequently updated DOM elements, keyed by
+ * semantic name. Populated once at startup to avoid repeated `getElementById`
+ * calls during high-frequency telemetry updates.
+ *
+ * @type {{
+ *   overlay:       HTMLElement,
+ *   connStatus:    HTMLElement,
+ *   connDot:       HTMLElement,
+ *   connLabel:     HTMLElement,
+ *   utcClock:      HTMLElement,
+ *   lat:           HTMLElement,
+ *   lon:           HTMLElement,
+ *   alt:           HTMLElement,
+ *   vel:           HTMLElement,
+ *   vis:           HTMLElement,
+ *   location:      HTMLElement,
+ *   distance:      HTMLElement,
+ *   updates:       HTMLElement,
+ *   crewList:      HTMLElement,
+ *   crewCount:     HTMLElement,
+ *   centerBtn:     HTMLButtonElement,
+ *   followBtn:     HTMLButtonElement,
+ *   terminatorBtn: HTMLButtonElement,
+ *   myLocationBtn: HTMLButtonElement,
+ *   passInfo:      HTMLElement,
+ *   sidebar:       HTMLElement,
+ *   sidebarToggle: HTMLButtonElement,
+ *   altToggle:     HTMLButtonElement,
+ *   velToggle:     HTMLButtonElement
+ * }}
+ */
 const el = {
   overlay:      $('loading-overlay'),
   connStatus:   $('connection-status'),
@@ -178,6 +325,16 @@ const el = {
 
 // ─── UTC Clock ────────────────────────────────────────────────────────────────
 
+/**
+ * @description Reads the current wall-clock time, formats it as `UTC HH:MM:SS`,
+ * and writes it to the `#utc-time` element. Called immediately at startup and
+ * then every second via `setInterval`.
+ *
+ * @returns {void}
+ *
+ * @example
+ * updateClock(); // Sets #utc-time to e.g. "UTC 14:07:03"
+ */
 function updateClock() {
   const now = new Date();
   const h   = String(now.getUTCHours()).padStart(2, '0');
@@ -190,8 +347,35 @@ updateClock();
 
 // ─── Telemetry Display ────────────────────────────────────────────────────────
 
+/**
+ * @description Simple in-memory cache that maps rounded `"lat,lon"` grid keys to
+ * resolved place name strings, preventing redundant reverse-geocode requests when
+ * the ISS stays within the same 1° cell.
+ * @type {Object.<string, string>}
+ */
 let locationCache = {};  // simple cache to avoid spamming reverse geocode
 
+/**
+ * @description Updates all telemetry sidebar fields from a position payload
+ * emitted by the server on the `iss:position` Socket.IO event.
+ *
+ * Side-effects:
+ * - Reads `state.altUnit` / `state.velUnit` to choose the correct display unit.
+ * - Increments `state.updateCount` and accumulates `state.distanceTraveled`.
+ * - Fires a `GET /api/iss/location-info` request when the rounded grid cell
+ *   changes, using `locationCache` to de-duplicate identical cells.
+ *
+ * @param {{
+ *   latitude:        number,
+ *   longitude:       number,
+ *   altitude_km:     number,
+ *   altitude_miles:  number,
+ *   velocity_kmh:    number,
+ *   velocity_mph:    number,
+ *   visibility:      'daylight'|'eclipsed'
+ * }} data - ISS telemetry payload from the server.
+ * @returns {void}
+ */
 function updateTelemetry(data) {
   const lat = data.latitude;
   const lon = data.longitude;
@@ -256,6 +440,18 @@ function updateTelemetry(data) {
 
 // ─── Map Updates ──────────────────────────────────────────────────────────────
 
+/**
+ * @description Moves the ISS marker, footprint circle, and (when follow mode is
+ * active) the map viewport to the latest ISS position. Also rotates the marker
+ * icon to reflect the computed travel bearing from the previous fix.
+ *
+ * @param {{
+ *   latitude:            number,
+ *   longitude:           number,
+ *   footprint_radius_km: number|undefined
+ * }} data - ISS position payload; `footprint_radius_km` is optional.
+ * @returns {void}
+ */
 function updateMap(data) {
   const lat  = data.latitude;
   const lon  = data.longitude;
@@ -285,6 +481,29 @@ function updateMap(data) {
 
 // ─── Crew List ────────────────────────────────────────────────────────────────
 
+/**
+ * @description Renders the crew panel from the astronaut payload emitted on the
+ * `iss:astronauts` Socket.IO event. Crew members are grouped by agency and
+ * sorted NASA → Roscosmos/RSA → others alphabetically. Each card links to the
+ * astronaut's biography page and shows their photo, role, spacecraft, days in
+ * space, and nationality flag.
+ *
+ * @param {{
+ *   crew: Array<{
+ *     name:       string,
+ *     agency:     string,
+ *     position:   string|undefined,
+ *     spacecraft: string|undefined,
+ *     launched:   number|undefined,
+ *     iss:        boolean,
+ *     image:      string|undefined,
+ *     url:        string|undefined,
+ *     flag_code:  string|undefined,
+ *     country:    string|undefined
+ *   }>
+ * }} data - Astronaut payload; `crew` defaults to an empty array when absent.
+ * @returns {void}
+ */
 function updateCrew(data) {
   const crew = data.crew || [];
   el.crewCount.textContent = crew.length;
@@ -329,18 +548,18 @@ function updateCrew(data) {
     .map(agency => {
       const meta = agencyMeta[agency] || { icon: '👨‍🚀', tag: 'tag-agency' };
       const members = groups[agency];
-      
+
       const groupHtml = members
         .map(m => {
           const daysInSpace = m.launched ? Math.floor((now - m.launched) / 86400) : 0;
           const station = m.iss ? 'ISS' : 'TIANGONG';
           const stationClass = m.iss ? 'tag-iss' : 'tag-tiangong';
-          
+
           return `
             <a class="crew-card" href="${m.url || '#'}" target="_blank" rel="noopener noreferrer">
               <div class="crew-photo-container">
-                ${m.image 
-                  ? `<img class="crew-photo" src="${m.image}" alt="${m.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">` 
+                ${m.image
+                  ? `<img class="crew-photo" src="${m.image}" alt="${m.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
                   : ''}
                 <span class="crew-photo-placeholder" style="${m.image ? 'display:none' : 'display:block'}">👨‍🚀</span>
               </div>
@@ -381,20 +600,51 @@ function updateCrew(data) {
 
 // ─── Socket.IO Client ─────────────────────────────────────────────────────────
 
+/**
+ * @description Socket.IO client instance. Prefers WebSocket transport with a
+ * long-polling fallback.
+ * @type {import('socket.io-client').Socket}
+ */
 const socket = io({ transports: ['websocket', 'polling'] });
 
+/**
+ * @description Fired when the Socket.IO connection is established or re-established.
+ * Updates the connection status badge to green / "LIVE".
+ */
 socket.on('connect', () => {
   el.connStatus.className = 'conn-status connected';
   el.connLabel.textContent = 'LIVE';
   console.log('[Socket.IO] Connected:', socket.id);
 });
 
+/**
+ * @description Fired when the Socket.IO connection is lost.
+ * Updates the connection status badge to red / "OFFLINE".
+ */
 socket.on('disconnect', () => {
   el.connStatus.className = 'conn-status disconnected';
   el.connLabel.textContent = 'OFFLINE';
   console.log('[Socket.IO] Disconnected');
 });
 
+/**
+ * @description Handles incoming ISS position updates from the server.
+ *
+ * On the very first event the loading overlay is hidden and the map is
+ * auto-centred + zoomed to fit the visibility footprint. Subsequent events
+ * update telemetry and move the marker.
+ *
+ * @param {{
+ *   latitude:            number,
+ *   longitude:           number,
+ *   altitude_km:         number,
+ *   altitude_miles:      number,
+ *   velocity_kmh:        number,
+ *   velocity_mph:        number,
+ *   visibility:          'daylight'|'eclipsed',
+ *   footprint_radius_km: number|undefined
+ * }} data - ISS position payload.
+ */
 socket.on('iss:position', (data) => {
   // Dismiss loading overlay on first position
   if (el.overlay && !el.overlay.classList.contains('hidden')) {
@@ -404,7 +654,7 @@ socket.on('iss:position', (data) => {
   // Initial Auto-Center logic
   if (!state.isInitialCenteringDone) {
     const latlng = L.latLng(data.latitude, data.longitude);
-    
+
     // Position the marker/circle first so bounds are correct
     issMarker.setLatLng(latlng);
     footprintCircle.setLatLng(latlng);
@@ -415,7 +665,7 @@ socket.on('iss:position', (data) => {
     // Center and fit zoom to the visibility footprint
     map.panTo(latlng, { animate: true, duration: 1.5 });
     map.fitBounds(footprintCircle.getBounds(), { padding: [20, 20] });
-    
+
     state.isInitialCenteringDone = true;
   }
 
@@ -423,20 +673,42 @@ socket.on('iss:position', (data) => {
   updateMap(data);
 });
 
+/**
+ * @description Handles incoming orbital path data and redraws the past-track and
+ * predicted-future polylines on the map.
+ *
+ * @param {{
+ *   past:   Array<Array<[number, number]>>|undefined,
+ *   future: Array<Array<[number, number]>>|undefined
+ * }} data - Orbital path payload; either key may be absent.
+ */
 socket.on('iss:orbital-path', (data) => {
   if (data.past)   drawPathSegments(data.past,   'past');
   if (data.future) drawPathSegments(data.future, 'future');
 });
 
+/**
+ * @description Handles incoming astronaut roster updates and re-renders the crew panel.
+ *
+ * @see updateCrew
+ */
 socket.on('iss:astronauts', updateCrew);
 
+/**
+ * @description Logs server-side ISS data errors to the console for debugging.
+ *
+ * @param {{ source: string, message: string }} err - Error descriptor from the server.
+ */
 socket.on('iss:error', (err) => {
   console.warn('[ISS Error]', err.source, err.message);
 });
 
 // ─── Control Buttons ──────────────────────────────────────────────────────────
 
-// Center on ISS
+/**
+ * @description Flies the map to the last known ISS position at zoom 4 when the
+ * "Center ISS" button is clicked. No-ops if no position has been received yet.
+ */
 el.centerBtn.addEventListener('click', () => {
   if (state.lastPosition) {
     map.flyTo([state.lastPosition.lat, state.lastPosition.lng], 4, {
@@ -445,14 +717,27 @@ el.centerBtn.addEventListener('click', () => {
   }
 });
 
-// Follow ISS toggle
+/**
+ * @description Toggles auto-follow mode. When active the map pans to the ISS on
+ * every `iss:position` event. Button text and CSS class update to reflect state.
+ */
 el.followBtn.addEventListener('click', () => {
   state.following = !state.following;
   el.followBtn.classList.toggle('active', state.following);
   el.followBtn.textContent = state.following ? '⏸ Following' : '▶ Follow ISS';
 });
 
-// Day/Night terminator toggle
+/**
+ * @description Toggles the day/night terminator overlay.
+ *
+ * When activated:
+ * 1. A semi-transparent white rectangle covers the entire world to brighten the day side.
+ * 2. A `L.terminator` polygon darkens the night side with a golden dawn/dusk boundary line.
+ * 3. A 60-second interval keeps the terminator position current.
+ *
+ * When deactivated both layers are removed from the map and the interval is cleared.
+ * Gracefully no-ops if `L.terminator` is unavailable (plugin not loaded).
+ */
 el.terminatorBtn.addEventListener('click', () => {
   state.terminatorActive = !state.terminatorActive;
   el.terminatorBtn.classList.toggle('active', state.terminatorActive);
@@ -496,22 +781,40 @@ el.terminatorBtn.addEventListener('click', () => {
   }
 });
 
-// Unit toggles
+/**
+ * @description Cycles the altitude display unit between `'km'` and `'mi'`.
+ * The next `updateTelemetry` call will render the new unit automatically.
+ */
 el.altToggle.addEventListener('click', () => {
   state.altUnit = state.altUnit === 'km' ? 'mi' : 'km';
 });
 
+/**
+ * @description Cycles the velocity display unit between `'kmh'` and `'mph'`.
+ * The next `updateTelemetry` call will render the new unit automatically.
+ */
 el.velToggle.addEventListener('click', () => {
   state.velUnit = state.velUnit === 'kmh' ? 'mph' : 'kmh';
 });
 
-// Mobile sidebar toggle
+/**
+ * @description Toggles the `open` CSS class on the sidebar element, showing or
+ * hiding the telemetry panel on narrow (mobile) viewports.
+ */
 el.sidebarToggle.addEventListener('click', () => {
   el.sidebar.classList.toggle('open');
 });
 
 // ─── My Location / Next ISS Pass ──────────────────────────────────────────────
 
+/**
+ * @description Requests the user's geolocation, then fetches the next three ISS
+ * visible passes from `GET /api/iss/passes` and renders them in `#pass-info`.
+ *
+ * The button is disabled during the asynchronous operation and re-enabled when
+ * complete. Error states (geolocation denied, fetch failure, no passes found)
+ * are surfaced inline in the `#pass-info` element.
+ */
 el.myLocationBtn.addEventListener('click', () => {
   if (!navigator.geolocation) {
     el.passInfo.innerHTML = '<span style="color:#ff4060">Geolocation not supported</span>';
@@ -562,6 +865,10 @@ el.myLocationBtn.addEventListener('click', () => {
 
 // ─── Map Click: close mobile sidebar ─────────────────────────────────────────
 
+/**
+ * @description Closes the sidebar when the user taps the map on viewports
+ * narrower than 768 px, restoring full-screen map visibility on mobile.
+ */
 map.on('click', () => {
   if (window.innerWidth <= 768) {
     el.sidebar.classList.remove('open');
@@ -580,7 +887,11 @@ map.on('movestart', (e) => {
   }
 });
 
-// A more robust way to detect manual interaction is to listen to specific user events
+/**
+ * @description Cancels auto-follow mode when the user manually drags or zooms
+ * the map, preventing the viewport from snapping back to the ISS on the next
+ * position update.
+ */
 map.on('dragstart zoomstart', () => {
   if (state.following) {
     state.following = false;
@@ -593,4 +904,3 @@ map.on('dragstart zoomstart', () => {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { state, map, issMarker, footprintCircle };
 }
-
