@@ -1,0 +1,7 @@
+version: 1
+mode: observe
+rules:
+  - purpose: "Require one non-author human reviewer on changes."
+    paths: ["**"]
+    verdict: { claude: comments, seats: [{ count: 1, from: [humans, "!pr/authors"] }] }
+    advisory: [claude/code_review]
